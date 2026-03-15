@@ -28,5 +28,7 @@ genisoimage -o govnvOS.iso -b floppy.img -no-emul-boot -boot-load-size 4 -boot-i
 #echo "Запуск: qemu-system-i386 -cdrom simple-os.iso"
 
 # Запуск
-qemu-system-i386 -kernel kernel 
+# добавить -s -S для отлатки
+qemu-system-i386 -kernel kernel
+
 

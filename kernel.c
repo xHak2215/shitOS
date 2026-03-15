@@ -3,6 +3,7 @@
 #include <stdarg.h> 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 #include "multi_lib.c"
 #include "keyboard_map.c"
@@ -35,6 +36,8 @@ unsigned int current_loc = 0;
 /* video memory begins at address 0xb8000 */
 char *vidptr = (char*)0xb8000;
 int cursor = 0; // счетчик позиции можно сказать курсора
+char input_key_buffer;
+char input_text_buffer;
 
 struct IDT_entry {
 	unsigned short int offset_lowerbits;
@@ -45,7 +48,6 @@ struct IDT_entry {
 };
 
 struct IDT_entry IDT[IDT_SIZE];
-
 
 void idt_init(void) {
 	unsigned long keyboard_address;
@@ -118,25 +120,31 @@ void keyboard_handler_main(void){
 		keycode = read_port(KEYBOARD_DATA_PORT);
 		if(keycode < 0)
 			return;
+               
+		// буфер котроый хранит последний введеный синвол
+		input_key_buffer = keycode;
+		// хранит все написаное, предположительное использование это ждать пока в input_key_buffer не окажеться ENTER_KEY_CODE а после исполнять команду и сбрасывать буфер
+                input_text_buffer += keycode;
+                  
+		//этот кусок кода может выводить написаное на экран но делает это криво желаельно задавать сатическое положение вывода и очещять после enter
+		//if(keycode == ENTER_KEY_CODE) {
+		//	cursor += COLUMNS_IN_LINE*2-12;
+		//	return;
+		//}
 
-		if(keycode == ENTER_KEY_CODE) {
-			print_newline();
-			return;
-		}
-
-		vidptr[current_loc++] = keyboard_map[(unsigned char) keycode];
-		vidptr[current_loc++] = TEXT_STYLE;
+		//vidptr[cursor + current_loc++] = keyboard_map[(unsigned char) keycode];
+		//vidptr[cursor + current_loc++] = TEXT_STYLE;
 	}
 }
 
 // очистка экрана
-void clear(char* video, int style) {
+void clear(int style) {
     cursor = 0;
     unsigned int i = 0;
 
     while (i < SCREENSIZE) {
 	vidptr[i++] = ' ';
-	vidptr[i++] = 0x07;
+	vidptr[i++] = style;
     }
 }
 
@@ -147,21 +155,21 @@ void print_newline(void){
 }
 
 //вывод текста на экран
-void print(char* video, const char* str, int style) {
+void print(const char* str, int style) {
     while (*str) {
         // Проверка на символ новой строки
         if (*str == '\n') {
             // Переход на новую строку в видеопамяти
-            cursor += COLUMNS_IN_LINE*2; // Переход на новую строку (80 символов * 2 байта)
-            str++; // Переход к следующему символу
+            cursor += (COLUMNS_IN_LINE*2 - strlen(str)*2) - 10; // Переход на новую строку ((80 символов - длина уже выведеного текста) * 2 байта) 
+            str++;     // Переход к следующему символу
             continue; // Переходим на следующую итерацию
         }
 
         // Запись символа в видеопамять
-        video[cursor] = *str;       // Запись символа
-        video[cursor + 1] = style; // Запись атрибута цвета
-        str++;                // Переход к следующему символу
-        cursor += 2;              // Увеличение счётчика на 2 (символ + атрибут)
+        vidptr[cursor] = *str;       // Запись символа
+        vidptr[cursor + 1] = style; // Запись атрибута цвета
+        str++;                    // Переход к следующему символу
+        cursor += 2;             // Увеличение счётчика на 2 (символ + атрибут)
     }
 }
 
@@ -182,14 +190,16 @@ void getSMBIOS(char* buffer) {
 void kernel_main() {
     char output[100]; // Буфер для вывода
 
-    clear(vidptr, TEXT_STYLE);
-    print(vidptr, "shitOS\n", TEXT_STYLE);
+    clear(TEXT_STYLE);
+    print("shitOS\n", TEXT_STYLE);
 
-    print(vidptr, "@", getColorCode("red"));
-    print(vidptr, "@", getColorCode("green"));
-    print(vidptr, "@", getColorCode("blue"));
-    print(vidptr, "\n\n", TEXT_STYLE);
-
+    print("@", getColorCode("red"));
+    print("@", getColorCode("green"));
+    print("@", getColorCode("blue"));
+   
+    print_newline();
+    print(">" + input_key_buffer, TEXT_STYLE);// не работает 
+    
     idt_init();
     kb_init();
     // Бесконечный цикл
