@@ -34,6 +34,7 @@ extern void load_idt(unsigned long *idt_ptr);
 unsigned int current_loc = 0;
 /* video memory begins at address 0xb8000 */
 char *vidptr = (char*)0xb8000;
+int cursor = 0; // счетчик позиции можно сказать курсора
 
 struct IDT_entry {
 	unsigned short int offset_lowerbits;
@@ -103,18 +104,6 @@ void kb_init(void){
 	write_port(0x21 , 0xFD);
 }
 
-void kprint(const char *str){
-	unsigned int i = 0;
-	while (str[i] != '\0') {
-		vidptr[current_loc++] = str[i++];
-		vidptr[current_loc++] = TEXT_STYLE;
-	}
-}
-
-void kprint_newline(void){
-	unsigned int line_size = BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE;
-	current_loc = current_loc + (line_size - current_loc % (line_size));
-}
 
 void keyboard_handler_main(void){
 	unsigned char status;
@@ -131,7 +120,7 @@ void keyboard_handler_main(void){
 			return;
 
 		if(keycode == ENTER_KEY_CODE) {
-			kprint_newline();
+			print_newline();
 			return;
 		}
 
@@ -140,30 +129,39 @@ void keyboard_handler_main(void){
 	}
 }
 
-void clear(char* video) {
-    for (int i = 0; i < 80 * 25 * 2; i += 2) {
-        video[i] = ' ';
-        video[i + 1] = TEXT_STYLE;
+// очистка экрана
+void clear(char* video, int style) {
+    cursor = 0;
+    unsigned int i = 0;
+
+    while (i < SCREENSIZE) {
+	vidptr[i++] = ' ';
+	vidptr[i++] = 0x07;
     }
 }
 
-void print(char* video, const char* str, int* style) {
-    int i = 0;
+// переход на новую строку(сомнительно)
+void print_newline(void){
+	unsigned int line_size = BYTES_FOR_EACH_ELEMENT * COLUMNS_IN_LINE;
+	current_loc = current_loc + (line_size - current_loc % (line_size));
+}
 
+//вывод текста на экран
+void print(char* video, const char* str, int style) {
     while (*str) {
         // Проверка на символ новой строки
         if (*str == '\n') {
             // Переход на новую строку в видеопамяти
-            i += 160; // Переход на новую строку (80 символов * 2 байта)
+            cursor += COLUMNS_IN_LINE*2; // Переход на новую строку (80 символов * 2 байта)
             str++; // Переход к следующему символу
             continue; // Переходим на следующую итерацию
         }
 
         // Запись символа в видеопамять
-        video[i] = *str;       // Запись символа
-        video[i + 1] = style; // Запись атрибута цвета
+        video[cursor] = *str;       // Запись символа
+        video[cursor + 1] = style; // Запись атрибута цвета
         str++;                // Переход к следующему символу
-        i += 2;              // Увеличение счётчика на 2 (символ + атрибут)
+        cursor += 2;              // Увеличение счётчика на 2 (символ + атрибут)
     }
 }
 
@@ -182,16 +180,18 @@ void getSMBIOS(char* buffer) {
 }
 
 void kernel_main() {
-    char* video = (char*) 0xB8000;
     char output[100]; // Буфер для вывода
 
-    clear(video);
-    print(video, "shitOS\n", TEXT_STYLE);
+    clear(vidptr, TEXT_STYLE);
+    print(vidptr, "shitOS\n", TEXT_STYLE);
 
-    print(video, "@", getColorCode("red"));
-    print(video, "@", getColorCode("green"));
-    print(video, "@", getColorCode("blue"));
+    print(vidptr, "@", getColorCode("red"));
+    print(vidptr, "@", getColorCode("green"));
+    print(vidptr, "@", getColorCode("blue"));
+    print(vidptr, "\n\n", TEXT_STYLE);
 
+    idt_init();
+    kb_init();
     // Бесконечный цикл
     while(1) {
         asm volatile ("hlt");
