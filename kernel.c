@@ -5,7 +5,6 @@
 #include <stddef.h>
 
 #include "multi_lib.c"
-
 #include "keyboard_map.c"
 #include "text_tool.c" 
 
@@ -148,7 +147,7 @@ void clear(char* video) {
     }
 }
 
-void print(char* video, const char* str) {
+void print(char* video, const char* str, int* style) {
     int i = 0;
 
     while (*str) {
@@ -162,7 +161,7 @@ void print(char* video, const char* str) {
 
         // Запись символа в видеопамять
         video[i] = *str;       // Запись символа
-        video[i + 1] = TEXT_STYLE; // Запись атрибута цвета
+        video[i + 1] = style; // Запись атрибута цвета
         str++;                // Переход к следующему символу
         i += 2;              // Увеличение счётчика на 2 (символ + атрибут)
     }
@@ -187,10 +186,11 @@ void kernel_main() {
     char output[100]; // Буфер для вывода
 
     clear(video);
-    print(video, "shitOS\n");
+    print(video, "shitOS\n", TEXT_STYLE);
 
-    msprintf(output, "▆%d▆%d▆%d▆%d", getColorCode("red"), getColorCode("blue"), getColorCode("green"), getColorCode("magenta"));
-    print(video, output);
+    print(video, "@", getColorCode("red"));
+    print(video, "@", getColorCode("green"));
+    print(video, "@", getColorCode("blue"));
 
     // Бесконечный цикл
     while(1) {
