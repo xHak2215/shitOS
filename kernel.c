@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "multi_lib.c"
 #include "keyboard_map.c"
@@ -24,6 +25,7 @@
 #define ENTER_KEY_CODE 0x1C
 
 #define TEXT_STYLE 0x07
+#define MAX_INPUT_SIZE 256
 
 extern unsigned char keyboard_map[128];
 extern void keyboard_handler(void);
@@ -36,8 +38,9 @@ unsigned int current_loc = 0;
 /* video memory begins at address 0xb8000 */
 char *vidptr = (char*)0xb8000;
 int cursor = 0; // счетчик позиции можно сказать курсора
-char input_key_buffer;
-char input_text_buffer;
+char* input_text_buffer[MAX_INPUT_SIZE];
+char* input_key_buffer;
+unsigned int input_length = 0;
 
 struct IDT_entry {
 	unsigned short int offset_lowerbits;
@@ -122,10 +125,13 @@ void keyboard_handler_main(void){
 			return;
                
 		// буфер котроый хранит последний введеный синвол
-		input_key_buffer = keycode;
+		input_key_buffer = keycode + '\0' ;
 		// хранит все написаное, предположительное использование это ждать пока в input_key_buffer не окажеться ENTER_KEY_CODE а после исполнять команду и сбрасывать буфер
-                input_text_buffer += keycode;
-                  
+                
+                char key_str[2] = { keycode, '\0' };
+
+		strncat(input_text_buffer, key_str, sizeof(input_text_buffer) - strlen(input_text_buffer) - 1);
+              
 		//этот кусок кода может выводить написаное на экран но делает это криво желаельно задавать сатическое положение вывода и очещять после enter
 		//if(keycode == ENTER_KEY_CODE) {
 		//	cursor += COLUMNS_IN_LINE*2-12;
@@ -168,27 +174,13 @@ void print(const char* str, int style) {
         // Запись символа в видеопамять
         vidptr[cursor] = *str;       // Запись символа
         vidptr[cursor + 1] = style; // Запись атрибута цвета
-        str++;                    // Переход к следующему символу
-        cursor += 2;             // Увеличение счётчика на 2 (символ + атрибут)
+        str++;                     // Переход к следующему символу
+        cursor += 2;              // Увеличение счётчика на 2 (символ + атрибут)
     }
 }
 
-void getSMBIOS(char* buffer) {
-    unsigned int eax, ebx, ecx, edx;
-
-    // Запрос SMBIOS через BIOS
-    __asm__ (
-        "movl $0xB, %%eax;"   // Установка значения 0xB в EAX для получения SMBIOS
-        "int $0x1A;"          // Прерывание для вызова BIOS
-        : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx) // Выходные регистры
-    );
-
-    // Формирование строки с выводом
-    buffer = "EAX: 0x%X, EBX: 0x%X, ECX: 0x%X, EDX: 0x", eax, ebx, ecx;
-}
-
 void kernel_main() {
-    char output[100]; // Буфер для вывода
+    char command[MAX_INPUT_SIZE];
 
     clear(TEXT_STYLE);
     print("shitOS\n", TEXT_STYLE);
@@ -197,13 +189,24 @@ void kernel_main() {
     print("@", getColorCode("green"));
     print("@", getColorCode("blue"));
    
-    print_newline();
-    print(">" + keyboard_map[(unsigned char) input_key_buffer], TEXT_STYLE);// не работает 
+    cursor = 3840;
+    print(">", TEXT_STYLE); 
     
     idt_init();
     kb_init();
     // Бесконечный цикл
     while(1) {
-        asm volatile ("hlt");
+	print(keyboard_map[(unsigned char) input_text_buffer], TEXT_STYLE);
+
+        if (input_key_buffer == ENTER_KEY_CODE) {
+            input_text_buffer[input_length] = '\0'; // Завершение строки нулевым символом
+            
+            cursor += 2 * strlen(input_text_buffer); // Обновление позиции курсора
+            input_length = 0; // Сброс для следующей команды
+            memset(input_text_buffer, 0, sizeof(input_text_buffer)); // Очистка буфера
+            print("> ", TEXT_STYLE); // Снова отображение приглашения
+            return;
+        }
+       asm volatile ("hlt");
     }
 }
