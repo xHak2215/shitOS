@@ -198,7 +198,7 @@ void kernel_main() {
     print("@", getColorCode("blue"));
    
     print_newline();
-    print(">" + input_key_buffer, TEXT_STYLE);// не работает 
+    print(">" + keyboard_map[(unsigned char) input_key_buffer], TEXT_STYLE);// не работает 
     
     idt_init();
     kb_init();
