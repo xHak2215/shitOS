@@ -104,4 +104,50 @@ char* int_to_str(int N) {
     return str; // Return the pointer to the string
 }
 
+char* mstrcat(char* _dst, const char* _src) {
+    __asm__ __volatile__ (
+        "mov %0, %%edi\n"        // _dst в edi
+        "mov %1, %%esi\n"        // _src в esi
+    "n:\n"
+        "movb (%%esi), %%al\n"   // загрузить байт из _src
+        "cmpb $0, %%al\n"         // сравнить с 0
+        "je e\n"                  // если 0, перейти к метке e
+        "movb %%al, (%%edi)\n"    // скопировать байт в _dst
+        "inc %%esi\n"             // инкрементировать указатель _src
+        "inc %%edi\n"             // инкрементировать указатель _dst
+        "jmp n\n"                 // повторить цикл
+    "e:\n"
+        "movb $0, (%%edi)\n"      // добавить завершающий нуль
+        :
+        : "r" (_dst), "r" (_src) // входные операнды
+        : "%edi", "%esi", "%al"   // изменяемые регистры
+    );
 
+    return _dst;  // возвращаем указатель на начальную позицию _dst
+}
+
+void* wordwise_32_memset(void* s, int c, size_t sz) {
+    uint32_t* p = (uint32_t*)s;
+
+    /* In this case the masking is actually important. */
+    uint32_t x = c & 0xff;
+
+    /* Construct a word's worth of the value we're supposed to be setting. */
+    x |= x << 8;
+    x |= x << 16;
+
+    /* This technique (without a prologue and epilogue) will only cope with
+     * sizes that are word-aligned. For example, you cannot use this function to
+     * set a region 7 bytes long. Let's do some checks to make sure the size
+     * passed is actually something we can cope with. It is worth noting that in
+     * practice you would actually want to check the alignment of the start
+     * pointer as well. Doing a word-wise memset on an unaligned pointer gains
+     * you nothing and may even hurt performance.
+     */
+    
+    sz >>= 2; /* Divide by number of bytes in a word. */
+
+    while (sz--)
+        *p++ = x;
+    return s;
+}

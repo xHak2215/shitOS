@@ -57,3 +57,4 @@ dkms.conf
 # собраниая программа
 *.img
 *.iso
+kernel

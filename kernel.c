@@ -125,21 +125,12 @@ void keyboard_handler_main(void){
 			return;
                
 		// буфер котроый хранит последний введеный синвол
-		input_key_buffer = keycode + '\0' ;
+		input_key_buffer = keycode;
 		// хранит все написаное, предположительное использование это ждать пока в input_key_buffer не окажеться ENTER_KEY_CODE а после исполнять команду и сбрасывать буфер
                 
                 char key_str[2] = { keycode, '\0' };
 
-		strncat(input_text_buffer, key_str, sizeof(input_text_buffer) - strlen(input_text_buffer) - 1);
-              
-		//этот кусок кода может выводить написаное на экран но делает это криво желаельно задавать сатическое положение вывода и очещять после enter
-		//if(keycode == ENTER_KEY_CODE) {
-		//	cursor += COLUMNS_IN_LINE*2-12;
-		//	return;
-		//}
-
-		//vidptr[cursor + current_loc++] = keyboard_map[(unsigned char) keycode];
-		//vidptr[cursor + current_loc++] = TEXT_STYLE;
+		mstrcat(input_text_buffer, key_str);
 	}
 }
 
@@ -180,11 +171,11 @@ void print(const char* str, int style) {
 }
 
 void kernel_main() {
+    clear(TEXT_STYLE);
+
     char command[MAX_INPUT_SIZE];
 
-    clear(TEXT_STYLE);
     print("shitOS\n", TEXT_STYLE);
-
     print("@", getColorCode("red"));
     print("@", getColorCode("green"));
     print("@", getColorCode("blue"));
@@ -196,15 +187,15 @@ void kernel_main() {
     kb_init();
     // Бесконечный цикл
     while(1) {
-	print(keyboard_map[(unsigned char) input_text_buffer], TEXT_STYLE);
+	print(keyboard_map[(const char) input_text_buffer], TEXT_STYLE);
 
         if (input_key_buffer == ENTER_KEY_CODE) {
-            input_text_buffer[input_length] = '\0'; // Завершение строки нулевым символом
-            
-            cursor += 2 * strlen(input_text_buffer); // Обновление позиции курсора
-            input_length = 0; // Сброс для следующей команды
-            memset(input_text_buffer, 0, sizeof(input_text_buffer)); // Очистка буфера
-            print("> ", TEXT_STYLE); // Снова отображение приглашения
+	    cursor = 3840; // Обновление позиции курсора
+            //wordwise_32_memset(input_text_buffer, 0, sizeof(input_text_buffer)); // Очистка буфера
+	    for (int i = 0; i==MAX_INPUT_SIZE; i++){
+	        input_text_buffer[i]="";
+	    }
+            print(">                                                          ", TEXT_STYLE); // Снова отображение приглашения
             return;
         }
        asm volatile ("hlt");
