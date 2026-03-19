@@ -88,9 +88,22 @@ void kb_init(void){
 
 void command_handler(char *command) {
      if (starts_with(command, "help")) {
+	   clear_console(" ", colors("white", begraund_color)); // очистка рабочей облости
 	   pos_print("the shitOS vary vary potusgni OS\ncommand:\nclear - clear display", colors("white", begraund_color), COLUMNS_IN_LINE*4);
+
      } else if (starts_with(command, "clear")){
         clear_screen(colors("black", begraund_color));
+
+     } else if (starts_with(command, "dick")){
+	    clear_console(" ", colors("white", begraund_color)); // очистка рабочей облости
+            for (int i=0; i < 8; i++) {
+                if (i > 5){
+	           pos_print("   ", colors("white", "black"), (COLUMNS_IN_LINE * 4 + 10) + (80 * 2 * i));
+	           pos_print("   ", colors("white", "black"), (COLUMNS_IN_LINE * 4 + 10) + (80 * 2 * i)+8);
+	        } else{		
+	           pos_print(" ", colors("white", "black"), (COLUMNS_IN_LINE * 4 + 16) + (80 * 2 * i));
+	        }
+	    }
      }
 }
 

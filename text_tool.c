@@ -172,3 +172,11 @@ int pos_print(const char* str, int style, int cursor_l) {
     }
 }
 
+void clear_console(char* symbol, int style) {
+    int start = COLUMNS_IN_LINE * 4;
+    int end   = COLUMNS_IN_LINE * 48 * 2;
+    for (int i = start; i <= end; i += 2) {
+        pos_print(symbol,  style, i);
+    }
+
+}
