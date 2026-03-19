@@ -118,3 +118,57 @@ unsigned char colors(const char* name_symbol_color, const char* name_begraund_co
 
 }
 
+void clear_screen(int style) {
+    cursor = 0;
+    for (unsigned int i = 0; i < SCREENSIZE; i += 2) {
+        vidptr[i] = ' ';
+        vidptr[i+1] = style;
+    }
+}
+
+int print(const char* str, int style) {
+    if (strlen(str) > SCREENSIZE){
+            return 1;
+    }
+    while (*str) {
+        if (*str == '\n') {
+            unsigned int chars_per_line = COLUMNS_IN_LINE;
+            unsigned int current_col = (cursor / 2) % chars_per_line;
+            unsigned int move = (chars_per_line - current_col) * 2;
+            cursor += move;
+            str++;
+            continue;
+        }
+        vidptr[cursor] = *str;
+        vidptr[cursor+1] = style;
+        str++;
+        cursor += 2;
+        if (cursor >= SCREENSIZE) {
+            cursor = SCREENSIZE - (COLUMNS_IN_LINE*2); // naive keep on last line
+        }
+    }
+}
+
+int pos_print(const char* str, int style, int cursor_l) {
+    if (strlen(str) > SCREENSIZE){
+            return 1;
+    }
+    while (*str) {
+        if (*str == '\n') {
+            unsigned int chars_per_line = COLUMNS_IN_LINE;
+            unsigned int current_col = (cursor_l / 2) % chars_per_line;
+            unsigned int move = (chars_per_line - current_col) * 2;
+            cursor_l += move;
+            str++;
+            continue;
+        }
+        vidptr[cursor_l] = *str;
+        vidptr[cursor_l+1] = style;
+        str++;
+        cursor_l += 2;
+        if (cursor_l >= SCREENSIZE) {
+            cursor_l = SCREENSIZE - (COLUMNS_IN_LINE*2); // naive keep on last line
+        }
+    }
+}
+

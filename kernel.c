@@ -3,9 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-#include "multi_lib.c"
-#include "text_tool.c"
+#include <stdbool.h>
 
 #define LINES 25
 #define COLUMNS_IN_LINE 80
@@ -22,6 +20,7 @@
 #define BACKSPACE_KEY_CODE 0x0E
 
 #define TEXT_STYLE 0x07
+#define begraund_color "blue"
 #define MAX_INPUT_SIZE 80
 
 extern unsigned char keyboard_map[128];
@@ -36,6 +35,9 @@ unsigned int cursor = 0; // позиция в байтах (символ + ат�
 
 char input_text_buffer[MAX_INPUT_SIZE];
 unsigned int input_length = 0;
+
+#include "multi_lib.c"
+#include "text_tool.c"
 
 struct IDT_entry {
     unsigned short int offset_lowerbits;
@@ -84,6 +86,14 @@ void kb_init(void){
     write_port(0x21 , 0xFD);
 }
 
+void command_handler(char *command) {
+     if (starts_with(command, "help")) {
+	   pos_print("the shitOS vary vary potusgni OS\ncommand:\nclear - clear display", colors("white", begraund_color), COLUMNS_IN_LINE*4);
+     } else if (starts_with(command, "clear")){
+        clear_screen(colors("black", begraund_color));
+     }
+}
+
 /* assembly keyboard handler should call this C function */
 void keyboard_handler_main(void) {
     unsigned char status;
@@ -108,22 +118,25 @@ void keyboard_handler_main(void) {
         if (keycode == ENTER_KEY_CODE) {
             /* print newline and prompt, process command here if needed */
             // move cursor to next line start
-            unsigned int chars_per_line = COLUMNS_IN_LINE;
-            unsigned int current_col = (cursor / 2) % chars_per_line;
-            unsigned int move = (chars_per_line - current_col) * 2;
-            cursor += move;
+          
             // optionally process input_text_buffer[0..input_length-1]
             // clear input buffer
+
+	    command_handler(input_text_buffer); // обработка и исполнение команд
+
             input_length = 0;
-            input_text_buffer[0] = '\0';
-            // print prompt '>'
+            for (int i = 0; i == MAX_INPUT_SIZE; i++){
+	        input_text_buffer[i] = "";
+	    }
+            
             if (cursor >= SCREENSIZE)
 		    cursor = SCREENSIZE - (COLUMNS_IN_LINE*2);
-
-            vidptr[cursor] = '>';
-            vidptr[cursor+1] = TEXT_STYLE;
-            cursor += 2;
+            
+            cursor = SCREENSIZE - (COLUMNS_IN_LINE*2);
+            print(">                                                                               ", TEXT_STYLE);
+            cursor = SCREENSIZE - (COLUMNS_IN_LINE*2)+2;
             return;
+
         } else if (keycode == BACKSPACE_KEY_CODE) {
             if (input_length > 0) {
                 /* remove char from buffer and screen */
@@ -136,6 +149,7 @@ void keyboard_handler_main(void) {
                 }
             }
             return;
+
         } else if (c != 0) {
             /* printable char: add to buffer and show */
             if (input_length < MAX_INPUT_SIZE - 1) {
@@ -153,37 +167,6 @@ void keyboard_handler_main(void) {
     }
 }
 
-void clear_screen(int style) {
-    cursor = 0;
-    for (unsigned int i = 0; i < SCREENSIZE; i += 2) {
-        vidptr[i] = ' ';
-        vidptr[i+1] = style;
-    }
-}
-
-int print(const char* str, int style) {
-    if (strlen(str) > SCREENSIZE){
-	    return 1;
-    }
-    while (*str) {
-        if (*str == '\n') {
-            unsigned int chars_per_line = COLUMNS_IN_LINE;
-            unsigned int current_col = (cursor / 2) % chars_per_line;
-            unsigned int move = (chars_per_line - current_col) * 2;
-            cursor += move;
-            str++;
-            continue;
-        }
-        vidptr[cursor] = *str;
-        vidptr[cursor+1] = style;
-        str++;
-        cursor += 2;
-        if (cursor >= SCREENSIZE) {
-            cursor = SCREENSIZE - (COLUMNS_IN_LINE*2); // naive keep on last line
-        }
-    }
-}
-
 int set_cursor(int x, int y) { // плохо работает
     unsigned short pos = (unsigned short)(y * 80 + x);
     if (x > COLUMNS_IN_LINE && y > LINES);
@@ -197,7 +180,6 @@ int set_cursor(int x, int y) { // плохо работает
 }
 
 void kernel_main() {
-    char* begraund_color = "blue";
 
     clear_screen(colors("black", begraund_color));
     print("shitOS\n", colors("black", begraund_color));
@@ -208,6 +190,7 @@ void kernel_main() {
     cursor = (LINES - 1) * COLUMNS_IN_LINE * 2;
     //set_cursor(strlen(input_text_buffer), 25);
     print(">                                                                               ", TEXT_STYLE);
+    cursor += 2;
 
     idt_init();
     kb_init();

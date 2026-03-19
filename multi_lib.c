@@ -151,3 +151,15 @@ void* wordwise_32_memset(void* s, int c, size_t sz) {
         *p++ = x;
     return s;
 }
+
+
+bool starts_with(const char *str, const char *search_str) {
+    size_t n = strlen(search_str);
+    
+    if (strlen(str) < n) return false;
+    for (size_t i = 0; i < n; ++i) {
+        if (str[i] != search_str[i]) return false;
+    }
+    return true;
+}
+
