@@ -174,7 +174,7 @@ void append(char *s, char ch) {
 }
 
 
-int split_symbol(const char *str, char split_char, char out[][100]) {
+int split_symbol(const char *str, const char split_char, char out[][100]) {
     int part = 0;
     int pos = 0;
     int len = strlen(str);
@@ -201,3 +201,14 @@ int split_symbol(const char *str, char split_char, char out[][100]) {
     return part + 1;
 }
 
+int chec_symbol(const char *str, const char searh_symbol){
+     int num = 0;
+
+     for (int i = 0; i < strlen(str); ++i){
+	     if (str[i] == searh_symbol){
+                num++;
+	     }
+     }
+
+     return num;
+}

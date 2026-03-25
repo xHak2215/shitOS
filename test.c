@@ -31,9 +31,12 @@ int split_symbol(const char *str, char split_char, char out[][100]) {
 int main(void) {
     char parts[10][100];
     int n = split_symbol("ab+cd+ef", '+', parts);
+    printf("%d\n", n);
     for (int i = 0; i < n; ++i) {
         printf("part %d: %s\n", i, parts[i]);
     }
+
+    printf(strstr("123a456", "a"));
     return 0;
 }
 

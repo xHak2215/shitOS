@@ -98,7 +98,10 @@ void command_handler(char *command) {
 	   consol_print("the shitOS vary vary potusgni OS\ncommand:\nclear - clear display");
 
      } else if (starts_with(command, "clear")){
-        clear_screen(colors("black", begraund_color));
+	   clear_console(" ", colors("white", begraund_color));
+     
+     }else if (starts_with(command, "clear_full_screan")){ 
+	   clear_screen(colors("black", begraund_color));
 
      } else if (starts_with(command, "dick")){
 	    clear_console(" ", colors("white", begraund_color)); // очистка рабочей облости
@@ -116,10 +119,26 @@ void command_handler(char *command) {
             
 	    int ram_size = 0;
 	    char out[8] = "RAM size:";
-	    append(out, ram_size / 0x100000);
+	    append(*out, ram_size / 0x100000);
 	    consol_print(out);
+
      } else if (starts_with(command, "calc")){
-            command
+	    clear_console(" ", colors("white", begraund_color));
+
+	    char parts[10][100];
+            char math_c;
+	    int n;
+	    
+	    for (int i = 4; i == strlen(command)-4; i++){
+                append(math_c, command[i]);             
+            }		    
+
+	    if (strstr(math_c, "+") != NULL && chec_symbol(math_c, "+") == 1){
+	       n = split_symbol(math_c, "+", parts);
+	       if (n == 3){
+	           consol_print(int_to_str(parts[0] + parts[3]));
+	       }
+            }
      }	     
 }
 
