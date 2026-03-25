@@ -11,6 +11,7 @@ global keyboard_handler
 global read_port
 global write_port
 global load_idt
+global get_e820
 
 extern kernel_main
 extern keyboard_handler_main
@@ -36,6 +37,32 @@ load_idt:
 keyboard_handler:                 
 	call    keyboard_handler_main
 	iretd
+
+get_e820:
+; Вход:
+;   ES:DI — указатель на буфер для записи (каждый буфер size байт)
+;   ECX — размер буфера (обычно 20 или 24)
+;   EBX — 0 при первом вызове (контекст)
+; Возвращает:
+;   CF=0 и AL=0 если OK (EBX = следующий контекст), буфер заполнен.
+;   CF=1 при ошибке.
+   pushad
+   mov eax, 0xE820
+   mov edx, 0x534D4150    ; 'SMAP'
+.loop:
+   int 0x15
+   jc .err
+   cmp eax, 0x534D4150    ; некоторые BIOS возвращают EAX=SMAP при успехе (опционально)
+   ; EBX обновлён BIOS'ом; если EBX == 0 — конец
+   test ebx, ebx
+   jz .done
+   jmp .loop
+.done:
+   popad
+   ret
+.err:
+   popad
+   ret
 
 _start:
 	cli 				;block interrupts

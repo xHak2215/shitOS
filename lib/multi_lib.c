@@ -1,3 +1,4 @@
+
 size_t strlen(const char* s) {
  size_t len = 0;
  while (*s++) {
@@ -126,6 +127,7 @@ char* mstrcat(char* _dst, const char* _src) {
     return _dst;  // возвращаем указатель на начальную позицию _dst
 }
 
+// украдено из https://github.com/Smattr/memset/blob/master/memset.c
 void* wordwise_32_memset(void* s, int c, size_t sz) {
     uint32_t* p = (uint32_t*)s;
 
@@ -161,5 +163,41 @@ bool starts_with(const char *str, const char *search_str) {
         if (str[i] != search_str[i]) return false;
     }
     return true;
+}
+
+void append(char *s, char ch) {
+    char *p = s;
+    while (*p != '\0') p++;   /* находим конец строки */
+    *p = ch;                  /* ставим цифру */
+    p++;
+    *p = '\0';                /* новый терминатор */
+}
+
+
+int split_symbol(const char *str, char split_char, char out[][100]) {
+    int part = 0;
+    int pos = 0;
+    int len = strlen(str);
+    int max_size = sizeof(*out);
+
+    if (max_size <= 0) return 0;
+
+    out[part][0] = '\0';
+
+    for (int i = 0; i < len; ++i) {
+        if (str[i] == split_char) {
+            out[part][pos] = '\0';
+            part++;
+            if (part >= max_size) return part;
+            pos = 0;
+            out[part][0] = '\0';
+        } else {
+            if (pos < 99) { // предотвратить переполнение буфера
+                out[part][pos++] = str[i];
+            }
+        }
+    }
+    out[part][pos] = '\0';
+    return part + 1;
 }
 

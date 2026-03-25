@@ -1,9 +1,9 @@
-#include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define LINES 25
 #define COLUMNS_IN_LINE 80
@@ -36,8 +36,8 @@ unsigned int cursor = 0; // позиция в байтах (символ + ат�
 char input_text_buffer[MAX_INPUT_SIZE];
 unsigned int input_length = 0;
 
-#include "multi_lib.c"
-#include "text_tool.c"
+#include "lib/multi_lib.c"
+#include "lib/text_tool.c" 
 
 struct IDT_entry {
     unsigned short int offset_lowerbits;
@@ -86,10 +86,16 @@ void kb_init(void){
     write_port(0x21 , 0xFD);
 }
 
-void command_handler(char *command) {
+void command_handler(char *command) {	
+     char* text_color = "white";
+
+     void consol_print(char* std) {
+          pos_print(std, colors(text_color, begraund_color), COLUMNS_IN_LINE*4);
+     }
+
      if (starts_with(command, "help")) {
 	   clear_console(" ", colors("white", begraund_color)); // очистка рабочей облости
-	   pos_print("the shitOS vary vary potusgni OS\ncommand:\nclear - clear display", colors("white", begraund_color), COLUMNS_IN_LINE*4);
+	   consol_print("the shitOS vary vary potusgni OS\ncommand:\nclear - clear display");
 
      } else if (starts_with(command, "clear")){
         clear_screen(colors("black", begraund_color));
@@ -104,7 +110,17 @@ void command_handler(char *command) {
 	           pos_print(" ", colors("white", "black"), (COLUMNS_IN_LINE * 4 + 16) + (80 * 2 * i));
 	        }
 	    }
-     }
+
+     } else if (starts_with(command, "fetch")){ // не работает
+	    clear_console(" ", colors("white", begraund_color));
+            
+	    int ram_size = 0;
+	    char out[8] = "RAM size:";
+	    append(out, ram_size / 0x100000);
+	    consol_print(out);
+     } else if (starts_with(command, "calc")){
+            command
+     }	     
 }
 
 /* assembly keyboard handler should call this C function */
